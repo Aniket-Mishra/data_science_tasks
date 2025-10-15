@@ -1,0 +1,29 @@
+services:
+  master:
+    build:
+      context: ./master
+    container_name: docker_demo-master
+    ports:
+      - "5010:5010"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5010/ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+    container_name: docker_demo-worker
+    depends_on:
+      master:
+        condition: service_healthy
+    environment:
+      MASTER_HOST: master
+      MASTER_PORT: "5010"
+      PING_INTERVAL: "2"
+      HELLO_INTERVAL: "5"
+      HELLO_NAME: "Ömür"
+    restart: unless-stopped

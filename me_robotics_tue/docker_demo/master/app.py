@@ -1,9 +1,24 @@
 import socket
+import threading
 import time
 
-from flask import Flast, jsonify
+import requests
+from flask import Flask, jsonify
 
-app = Flast(__name__)
+app = Flask(__name__)
+WORKER_URL = "http://worker:5010/status"
+
+
+def check_worker():
+    while True:
+        try:
+            r = requests.get(WORKER_URL, timeout=3)
+            data = r.json()
+            mood = data.get("status", "Unknown")
+            print(f"[master] worker mood: {mood}", flush=True)
+        except Exception as e:
+            print(f"[master] error contacting worker: {e}")
+        time.sleep(10)
 
 
 @app.route("/ping")
@@ -17,7 +32,7 @@ def ping():
     )
 
 
-@app.route("/hellp/<name>")
+@app.route("/hello/<name>")
 def hello(name):
     return jsonify(
         status="ok",
@@ -34,4 +49,5 @@ def root():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    threading.Thread(target=check_worker, daemon=True).start()
+    app.run(host="0.0.0.0", port=5010)
